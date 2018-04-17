@@ -4,6 +4,19 @@ const Fiat = require('./lib/Fiat')
 
 let bot = new Bot()
 
+// REPORT CLASSIFICATIONS
+// A - Ventajismo: Uso de recursos públicos /funcionarios públicos beneficiando a Maduro
+// B - obstrucción de la campaña electoral de la oposición / violencia contra candidato o su comando
+// C - Coacción a electores. Se amenaza o electores o se ofrecen recompensas a cambio del voto por un candidato.
+// D - Operación morrocoy para la formación y acreditación de ciudadanos sorteados como miembros de mesa.
+//
+// MACHINE STATES
+// Intro
+// Reporting
+// Classifying
+// Locating
+// Identifying user
+
 // ROUTING
 
 bot.onEvent = function(session, message) {
@@ -27,20 +40,137 @@ bot.onEvent = function(session, message) {
 }
 
 function onMessage(session, message) {
-  sendMessage(session, `Recibimos tu mensaje o foto. Por favor, síguenos enviando más detalles y fotos sobre este incidente. Cuando quieras hablar sobre otro incidente, presiona el botón "Nuevo incidente".`)
+  let mode = session.get('mode');
+  switch (mode) {
+      case 'Intro':
+          var message = `Recibimos tu primer mensaje y abrimos un nuevo reporte. Por favor, envía más fotos o mensajes que describan el incidente. Cuando termines, presiona "Terminar reporte".`;
+          var controls = [
+              {type: 'button', label: 'Terminar reporte', value: 'cerrar_descripcion'}
+          ]
+          session.reply(SOFA.Message({body: message, controls: controls}));;
+          break
+      case 'Reporting':
+          var message = `Recibimos tu mensaje. Envía fotos o más mensajes que describan el incidente. Cuando termines, presiona "Terminar reporte".`;
+          var controls = [
+              {type: 'button', label: 'Terminar reporte', value: 'cerrar_descripcion'}
+          ]
+          session.reply(SOFA.Message({body: message, controls: controls}));;
+          break
+      case 'Classifying':
+          var message = `Por favor, ayúdanos a clasificar el último reporte que escribiste utilizando los botones debajo.`;
+          var controls = [
+              {type: 'button', label: 'Ventajismo', value: 'pedir_confirmacion_ventajismo'},
+              {type: 'button', label: 'Obstrucción', value: 'pedir_confirmacion_obstruccion'},
+              {type: 'button', label: 'Coacción', value: 'pedir_confirmacion_coaccion'},
+              {type: 'button', label: 'Lentitud', value: 'pedir_confirmacion_lentitud'},
+          ]
+          session.reply(SOFA.Message({body: message, controls: controls}));;
+          break
+      case 'Locating':
+          var message = `Cuando termines presiona "Confirmar dirección".`;
+          var controls = [
+              {type: 'button', label: 'Confirmar dirección', value: 'confirmar_direccion'}
+          ];
+          session.reply(SOFA.Message({body: message, controls: controls, showKeyboard: true}));
+          break
+      case 'Identifying':
+          var message = `Cuando termines presiona "Confirmar datos".`;
+          var controls = [
+              {type: 'button', label: 'Confirmar datos', value: 'confirmar_datos'}
+          ];
+          session.reply(SOFA.Message({body: message, controls: controls, showKeyboard: true}));
+          break
+  }
 }
 
 function onCommand(session, command) {
   switch (command.content.value) {
-    case 'nuevo_incidente':
-      nuevo_incidente(session)
+    case 'nuevo_reporte':
+      session.set('mode', 'Reporting');
+      var message = `Por favor, describe en pocas palabras lo que observaste.`;
+      var controls = [
+          {type: 'button', label: 'Nuevo reporte', value: 'nuevo_reporte'}
+      ];
+      session.reply(SOFA.Message({body: message, controls: controls}));;
       break
-    case 'count':
-      count(session)
+    case 'cerrar_descripcion':
+      session.set('mode', 'Classifying');
+      var message = `Listo, el incidente quedó registrado. ¿Qué tipo de incidente es?`;
+      var controls = [
+          {type: 'button', label: 'Ventajismo', value: 'pedir_confirmacion_ventajismo'},
+          {type: 'button', label: 'Obstrucción', value: 'pedir_confirmacion_obstruccion'},
+          {type: 'button', label: 'Coacción', value: 'pedir_confirmacion_coaccion'},
+          {type: 'button', label: 'Lentitud', value: 'pedir_confirmacion_lentitud'}
+      ];
+      session.reply(SOFA.Message({body: message, controls: controls}));;
       break
-    case 'donate':
-      donate(session)
+    case 'pedir_confirmacion_ventajismo':
+      var message = `Ventajismo es el uso de recursos o funcionarios para beneficiar a un candidato.\n\n¿Quieres clasificar tu último reporte en esta categoría?`;
+      var controls = [
+          {type: 'button', label: 'Sí', value: 'confirmar_clasificacion'},
+          {type: 'button', label: 'Otras opciones', value: 'cerrar_descripcion'}
+      ];
+      session.reply(SOFA.Message({body: message, controls: controls}));;
       break
+    case 'pedir_confirmacion_obstruccion':
+      var message = `Obstrucción es impedir o sabotear la campaña electoral de alguno de los bandos.\n\n¿Quieres clasificar tu último reporte en esta categoría?`;
+      var controls = [
+          {type: 'button', label: 'Sí', value: 'confirmar_clasificacion'},
+          {type: 'button', label: 'Otras opciones', value: 'cerrar_descripcion'}
+      ];
+      session.reply(SOFA.Message({body: message, controls: controls}));;
+      break
+    case 'pedir_confirmacion_coaccion':
+      var message = `Coacción es amenazar a los electores u ofrecerles recompensas por votar por un candidato.\n\n¿Quieres clasificar tu último reporte en esta categoría?`;
+      var controls = [
+          {type: 'button', label: 'Sí', value: 'confirmar_clasificacion'},
+          {type: 'button', label: 'Otras opciones', value: 'cerrar_descripcion'}
+      ];
+      session.reply(SOFA.Message({body: message, controls: controls}));;
+      break
+    case 'pedir_confirmacion_lentitud':
+      var message = `Lentitud es aplicar "operación morrocoy" para formar o acreditar ciudadanos sorteados como miembros de mesa.\n\n¿Quieres clasificar tu último reporte en esta categoría?`;
+      var controls = [
+          {type: 'button', label: 'Sí', value: 'confirmar_clasificacion'},
+          {type: 'button', label: 'Otras opciones', value: 'cerrar_descripcion'}
+      ];
+      session.reply(SOFA.Message({body: message, controls: controls}));;
+      break
+    case 'confirmar_clasificacion':
+      session.set('mode', 'Locating');
+      var message = `Gracias. Ahora escribe dónde ocurrió este hecho (si los sabes, especifica dirección, parroquia, municipio y estado). \n\nCuando termines presiona "Confirmar dirección".`;
+      var controls = [
+          {type: 'button', label: 'Confirmar dirección', value: 'confirmar_direccion'}
+      ];
+      session.reply(SOFA.Message({body: message, controls: controls, showKeyboard: true}));
+      break
+    case 'confirmar_direccion':
+      session.set('mode', 'Identifying');
+      if (session.get('userHasBeenAskedForId') == undefined) {
+        session.set('userHasBeenAskedForId', true);
+        var message = `¡Casi listos! Ahora, ¿puedes darnos algún dato personal, como tu cédula o número de teléfono, para localizarte en caso de que necesitemos más información?\n\nNo compartiremos tus datos con nadie. Cuando termines, presiona "Confirmar datos".`;
+        var controls = [
+            {type: 'button', label: 'Confirmar datos', value: 'confirmar_datos'},
+            {type: 'button', label: 'Prefiero no compartir datos', value: 'confirmar_datos'}
+        ];
+        session.reply(SOFA.Message({body: message, controls: controls, showKeyboard: true}));
+      }
+      else {
+        session.set('mode', 'Reporting');
+        var message = "Muchas gracias por tu reporte. Inicia uno nuevo usando el botón debajo.";
+        var controls = [
+            {type: 'button', label: 'Nuevo reporte', value: 'nuevo_reporte'}
+        ];
+        session.reply(SOFA.Message({body: message, controls: controls}));;
+      }
+      break
+    case 'confirmar_datos':
+          session.set('mode', 'Reporting');
+          var message = "Muchas gracias por tu reporte. Inicia uno nuevo usando el botón debajo.";
+          var controls = [
+              {type: 'button', label: 'Nuevo reporte', value: 'nuevo_reporte'}
+          ];
+          session.reply(SOFA.Message({body: message, controls: controls}));;
     }
 }
 
@@ -66,21 +196,13 @@ function onPayment(session, message) {
   }
 }
 
-// STATES
-
 function welcome(session) {
-  sendMessage(session, `¡Hola! Somos el equipo de observación electoral para la jornada del 20 de mayo de 2018. Puedes reportar un incidente presionando el botón "Nuevo incidente" que ves abajo.\n\nApreciamos que nos envíes fotos de lo que está ocurriendo y tantos mensajes de texto como quieras detallando la situación.\n\nCuando quieras reportar otro incidente distinto, vuelve a presionar el botón "Nuevo incidente".`)
-}
-
-function nuevo_incidente(session) {
-  sendMessage(session, `Estás reportando un incidente. Mándanos fotos y relata lo que ocurre. Cuando quieras enviarnos detalles sobre otra ocurrencia distinta (incluso otra de la que ya hayas hablado antes), presiona el botón "Nuevo incidente".`)
-}
-
-// example of how to store state on each user
-function count(session) {
-  let count = (session.get('count') || 0) + 1
-  session.set('count', count)
-  sendMessage(session, `${count}`)
+  session.set('mode', 'Intro');
+  let controls = [
+    {type: 'button', label: 'Nuevo reporte', value: 'nuevo_reporte'}
+  ];
+  let message = `¡Hola! Somos el equipo de observación electoral en Venezuela. Puedes reportar un incidente relacionado a la campaña presionando el botón "Nuevo reporte" que ves abajo.`;
+  session.reply(SOFA.Message({body: message, controls: controls}));;
 }
 
 function donate(session) {
@@ -88,19 +210,4 @@ function donate(session) {
   Fiat.fetch().then((toEth) => {
     session.requestEth(toEth.USD(1))
   })
-}
-
-// HELPERS
-
-function sendMessage(session, message) {
-  let controls = [
-    {type: 'button', label: 'Nuevo incidente', value: 'nuevo_incidente'}
-    //,{type: 'button', label: 'Count', value: 'count'},
-    //{type: 'button', label: 'Donate', value: 'donate'}
-  ]
-  session.reply(SOFA.Message({
-    body: message,
-    controls: controls,
-    showKeyboard: false,
-  }))
 }
