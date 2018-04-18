@@ -67,6 +67,7 @@ function onMessage(session, message) {
           session.reply(SOFA.Message({body: message, controls: controls}));;
           break
       case 'Locating':
+          session.set('userWroteAddress', true);
           var message = `Cuando termines presiona "Confirmar dirección".`;
           var controls = [
               {type: 'button', label: 'Confirmar dirección', value: 'confirmar_direccion'}
@@ -145,6 +146,14 @@ function onCommand(session, command) {
       session.reply(SOFA.Message({body: message, controls: controls, showKeyboard: true}));
       break
     case 'confirmar_direccion':
+      if (session.get('userWroteAddress') == undefined) {
+        var message = `Por favor escribe dónde ocurrió este hecho (si los sabes, especifica dirección, parroquia, municipio y estado). \n\nCuando termines presiona "Confirmar dirección".`;
+        var controls = [
+            {type: 'button', label: 'Confirmar dirección', value: 'confirmar_direccion'}
+        ];
+        session.reply(SOFA.Message({body: message, controls: controls, showKeyboard: true}));
+        break
+      }
       session.set('mode', 'Identifying');
       if (session.get('userHasBeenAskedForId') == undefined) {
         session.set('userHasBeenAskedForId', true);
